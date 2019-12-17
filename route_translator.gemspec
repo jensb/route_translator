@@ -1,25 +1,36 @@
-# encoding: utf-8
-require File.expand_path('../lib/route_translator/version', __FILE__)
+# frozen_string_literal: true
 
-Gem::Specification.new do |s|
-  s.name = "route_translator"
-  s.version = RouteTranslator::VERSION
+lib = File.expand_path('lib', __dir__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require 'route_translator/version'
 
-  s.authors = ["Raul Murciano", "Enric Lluelles"]
-  s.email = %q{enric@lluell.es}
+Gem::Specification.new do |spec|
+  spec.name          = 'route_translator'
+  spec.version       = RouteTranslator::VERSION
+  spec.authors       = ['Geremia Taglialatela', 'Enric Lluelles', 'Raul Murciano']
+  spec.email         = ['tagliala.dev@gmail.com', 'enric@lluell.es']
 
-  s.homepage = %q{http://github.com/enriclluelles/route_translator}
+  spec.summary       = 'Translate your Rails routes in a simple manner'
+  spec.description   = 'Translates the Rails routes of your application into the languages defined in your locale files'
+  spec.homepage      = 'https://github.com/enriclluelles/route_translator'
+  spec.license       = 'MIT'
 
-  s.description = %q{Translates the Rails routes of your application into the languages defined in your locale files}
-  s.summary = %q{Translate your Rails routes in a simple manner}
-  s.license = 'MIT'
+  spec.files         = `git ls-files -z -- {CHANGELOG.md,LICENSE,README.md,lib}`.split("\x0")
+  spec.require_paths = ['lib']
 
-  s.files = `git ls-files lib`.split($\)
-  s.test_files = `git ls-files test`.split($\)
-  s.require_paths = ["lib"]
+  spec.required_ruby_version = '~> 2.3'
 
-  s.add_runtime_dependency("activesupport", ">= 3.2", "< 5.0")
-  s.add_runtime_dependency("actionpack",    ">= 3.2", "< 5.0")
+  spec.add_runtime_dependency 'actionpack', '>= 5.0.0.1', '< 6.1'
+  spec.add_runtime_dependency 'activesupport', '>= 5.0.0.1', '< 6.1'
 
-  s.add_development_dependency("pry")
+  spec.add_development_dependency 'appraisal', '~> 2.2'
+  spec.add_development_dependency 'byebug', '>= 10.0', '< 12'
+  spec.add_development_dependency 'coveralls_reborn', '~> 0.13.3'
+  spec.add_development_dependency 'minitest', '~> 5.13'
+  spec.add_development_dependency 'rails', '>= 5.0.0.1', '< 6.1'
+  spec.add_development_dependency 'rake', '~> 13.0'
+  spec.add_development_dependency 'rubocop', '~> 0.77.0'
+  spec.add_development_dependency 'rubocop-performance', '~> 1.5'
+  spec.add_development_dependency 'rubocop-rails', '~> 2.4'
+  spec.add_development_dependency 'simplecov', '~> 0.17.1'
 end

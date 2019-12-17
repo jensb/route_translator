@@ -1,8 +1,8 @@
-#encoding: utf-8
-require File.expand_path('../test_helper', __FILE__)
+# frozen_string_literal: true
 
-class TestHostsFromLocale < MiniTest::Unit::TestCase
+require 'test_helper'
 
+class TestHostsFromLocale < Minitest::Test
   include RouteTranslator::ConfigurationHelper
   include RouteTranslator::I18nHelper
   include RouteTranslator::RoutesHelper
@@ -11,13 +11,14 @@ class TestHostsFromLocale < MiniTest::Unit::TestCase
     setup_config
     setup_i18n
 
-    config = host_locales_config_hash
-    config['*.something.es']          = :es
-    config['*.ru.subdomain.domain.*'] = :ru
-    config['russia.something.net']    = :ru
-    config['*.com']                   = :en
+    config = {
+      '*.something.es'          => :es,
+      '*.ru.subdomain.domain.*' => :ru,
+      'russia.something.net'    => :ru,
+      '*.com'                   => :en
+    }
 
-    config_host_locales(config)
+    config_host_locales config
   end
 
   def teardown
@@ -58,50 +59,45 @@ class TestHostsFromLocale < MiniTest::Unit::TestCase
   end
 
   def test_precedence_if_more_than_one_match
-    config = host_locales_config_hash
-    config['russia.*'] = :ru
-    config['*.com'] = :en
-    config_host_locales(config)
+    config_host_locales 'russia.*' => :ru, '*.com' => :en
     assert_equal :ru, RouteTranslator::Host.locale_from_host('russia.com')
 
-    config = host_locales_config_hash
-    config['*.com'] = :en
-    config['russia.*'] = :ru
-    config_host_locales(config)
+    config_host_locales '*.com' => :en, 'russia.*' => :ru
     assert_equal :en, RouteTranslator::Host.locale_from_host('russia.com')
   end
 
-  def test_default_locale_if_no_matches
-    assert_equal I18n.default_locale, RouteTranslator::Host.locale_from_host('nomatches.co.uk')
+  def test_nil_if_no_matches
+    assert_nil RouteTranslator::Host.locale_from_host('nomatches.co.uk')
   end
 
   def test_readme_examples_work
-    config = host_locales_config_hash
-    config['*.es']                  = :es # matches ['domain.es', 'subdomain.domain.es', 'www.long.string.of.subdomains.es'] etc.
-    config['ru.wikipedia.*']        = :ru # matches ['ru.wikipedia.org', 'ru.wikipedia.net', 'ru.wikipedia.com'] etc.
-    config['*.subdomain.domain.*']  = :ru # matches ['subdomain.domain.org', 'www.subdomain.domain.net'] etc.
-    config['news.bbc.co.uk']        = :en # matches ['news.bbc.co.uk'] only
+    config = {
+      '*.es'                 => :es, # matches ['domain.es', 'subdomain.domain.es', 'www.long.string.of.subdomains.es'] etc.
+      'ru.wikipedia.*'       => :ru, # matches ['ru.wikipedia.org', 'ru.wikipedia.net', 'ru.wikipedia.com'] etc.
+      '*.subdomain.domain.*' => :ru, # matches ['subdomain.domain.org', 'www.subdomain.domain.net'] etc.
+      'news.bbc.co.uk'       => :en # matches ['news.bbc.co.uk'] only
+    }
 
-    config_host_locales(config)
+    config_host_locales config
 
-    examples_1 = ['domain.es', 'subdomain.domain.es', 'www.long.string.of.subdomains.es']
-    examples_2 = ['ru.wikipedia.org', 'ru.wikipedia.net', 'ru.wikipedia.com']
-    examples_3 = ['subdomain.domain.org', 'www.subdomain.domain.net']
-    examples_4 = ['news.bbc.co.uk']
+    examples_es = ['domain.es', 'subdomain.domain.es', 'www.long.string.of.subdomains.es']
+    examples_ru = ['ru.wikipedia.org', 'ru.wikipedia.net', 'ru.wikipedia.com']
+    examples_ru_alt = ['subdomain.domain.org', 'www.subdomain.domain.net']
+    examples_en = ['news.bbc.co.uk']
 
-    examples_1.each do |domain|
+    examples_es.each do |domain|
       assert_equal :es, RouteTranslator::Host.locale_from_host(domain)
     end
 
-    examples_2.each do |domain|
+    examples_ru.each do |domain|
       assert_equal :ru, RouteTranslator::Host.locale_from_host(domain)
     end
 
-    examples_3.each do |domain|
+    examples_ru_alt.each do |domain|
       assert_equal :ru, RouteTranslator::Host.locale_from_host(domain)
     end
 
-    examples_4.each do |domain|
+    examples_en.each do |domain|
       assert_equal :en, RouteTranslator::Host.locale_from_host(domain)
     end
   end

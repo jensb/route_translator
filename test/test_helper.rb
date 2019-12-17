@@ -1,18 +1,30 @@
-#encoding: utf-8
+# frozen_string_literal: true
+
+# Configure Rails Environment
+ENV['RAILS_ENV'] = 'test'
+
+if ENV['CI']
+  require 'coveralls'
+  Coveralls.wear!
+end
+
+require 'simplecov'
+SimpleCov.start 'rails' do
+  add_filter %w[version.rb]
+end
 
 require 'minitest/autorun'
 require 'minitest/mock'
 
 require 'i18n'
-begin
-  I18n.enforce_available_locales = true
-rescue NoMethodError
-end
 
-require "rails"
-require "action_controller/railtie"
+require 'rails'
+require 'action_controller/railtie'
+require 'action_mailer/railtie'
 
 require 'route_translator'
+
+require 'byebug'
 
 module ActionDispatch
   class TestRequest < Request
@@ -26,6 +38,6 @@ module ActionDispatch
   end
 end
 
-Dir[File.expand_path('../support/*.rb', __FILE__)].each do |helper|
+Dir[File.expand_path('support/*.rb', __dir__)].each do |helper|
   require helper
 end

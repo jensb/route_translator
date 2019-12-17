@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'action_dispatch'
 
 module ActionDispatch
@@ -9,46 +11,44 @@ module ActionDispatch
         @localized = false
       end
 
-      if instance_methods.map(&:to_s).include?('add_route')
-        def add_route(action, options) # :nodoc:
-          path = path_for_action(action, options.delete(:path))
+      # rubocop:disable Lint/UnderscorePrefixedVariableName
+      def add_route(action, controller, options, _path, to, via, formatted, anchor, options_constraints) # :nodoc:
+        return super unless @localized
 
-          if action.to_s =~ /^[\w\/]+$/
-            options[:action] ||= action unless action.to_s.include?("/")
-          else
-            action = nil
-          end
+        path = path_for_action(action, _path)
+        raise ArgumentError, 'path is required' if path.blank?
 
-          if !options.fetch(:as, true)
-            options.delete(:as)
-          else
-            options[:as] = name_for_action(options[:as], action)
-          end
+        action = action.to_s
 
-          begin
-            mapping = Mapping.new(@set, @scope, path, options)
-          rescue ArgumentError => e
-            mapping = Mapping.build(@scope, @set, URI.parser.escape(path), options.delete(:as), options)
-          end
+        default_action = options.delete(:action) || @scope[:action]
 
-          if @localized
-            @set.add_localized_route(*mapping.to_route)
-          else
-            @set.add_route(*mapping.to_route)
-          end
+        if action =~ %r{^[\w\-\/]+$}
+          default_action ||= action.tr('-', '_') unless action.include?('/')
+        else
+          action = nil
         end
-      else
-        module Base
-          def match(path, options=nil)
-            mapping = Mapping.new(@set, @scope, path, options || {})
-            app, conditions, requirements, defaults, as, anchor = mapping.to_route
-            if @localized
-              @set.add_localized_route(app, conditions, requirements, defaults, as, anchor)
-            else
-              @set.add_route(app, conditions, requirements, defaults, as, anchor)
-            end
-            self
-          end
+
+        as = if !options.fetch(:as, true) # if it's set to nil or false
+               options.delete(:as)
+             else
+               name_for_action(options.delete(:as), action)
+             end
+
+        path = Mapping.normalize_path URI.parser.escape(path), formatted
+        ast = Journey::Parser.parse path
+
+        mapping = Mapping.build(@scope, @set, ast, controller, default_action, to, via, formatted, options_constraints, anchor, options)
+        @set.add_localized_route(mapping, ast, as, anchor, @scope, path, controller, default_action, to, via, formatted, options_constraints, options)
+      end
+      # rubocop:enable Lint/UnderscorePrefixedVariableName
+
+      private
+
+      def define_generate_prefix(app, name)
+        return super unless @localized
+
+        RouteTranslator::Translator.available_locales.each do |locale|
+          super(app, "#{name}_#{locale.to_s.underscore}")
         end
       end
     end

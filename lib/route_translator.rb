@@ -1,45 +1,77 @@
+# frozen_string_literal: true
+
 require 'active_support'
 
-require File.expand_path('../route_translator/extensions', __FILE__)
-require File.expand_path('../route_translator/translator', __FILE__)
-require File.expand_path('../route_translator/host', __FILE__)
+require 'route_translator/extensions'
+require 'route_translator/translator'
+require 'route_translator/host'
+require 'route_translator/host_path_consistency_lambdas'
+require 'route_translator/locale_sanitizer'
 
 module RouteTranslator
   extend RouteTranslator::Host
 
   TRANSLATABLE_SEGMENT = /^([-_a-zA-Z0-9]+)(\()?/.freeze
 
-  Configuration = Struct.new(:force_locale, :hide_locale,
-                             :generate_unlocalized_routes, :locale_param_key,
-                             :generate_unnamed_unlocalized_routes, :available_locales,
-                             :host_locales, :disable_fallback, :path_separator)
+  DEFAULT_CONFIGURATION = {
+    available_locales:                   [],
+    disable_fallback:                    false,
+    force_locale:                        false,
+    generate_unlocalized_routes:         false,
+    generate_unnamed_unlocalized_routes: false,
+    hide_locale:                         false,
+    host_locales:                        {},
+    locale_param_key:                    :locale,
+    locale_segment_proc:                 false,
+    verify_host_path_consistency:        false,
+    path_separator:                      '/'
+  }.freeze
 
-  def self.config(&block)
-    @config                                     ||= Configuration.new
-    @config.force_locale                        ||= false
-    @config.hide_locale                         ||= false
-    @config.generate_unlocalized_routes         ||= false
-    @config.locale_param_key                    ||= :locale
-    @config.generate_unnamed_unlocalized_routes ||= false
-    @config.host_locales                        ||= ActiveSupport::OrderedHash.new
-    @config.available_locales                   ||= nil
-    @config.disable_fallback                    ||= false
-    @config.path_separator                      ||= '/'
-    yield @config if block
-    resolve_config_conflicts
-    @config
-  end
+  Configuration = Struct.new(*DEFAULT_CONFIGURATION.keys)
 
-  def self.resolve_config_conflicts
-    if @config.host_locales.present?
+  class << self
+    private
+
+    def resolve_host_locale_config_conflicts
+      @config.force_locale                        = false
       @config.generate_unlocalized_routes         = false
       @config.generate_unnamed_unlocalized_routes = false
-      @config.force_locale                        = false
       @config.hide_locale                         = false
     end
   end
 
-  def self.locale_param_key
-    self.config.locale_param_key
+  module_function
+
+  def config(&block)
+    @config ||= Configuration.new
+
+    DEFAULT_CONFIGURATION.each do |option, value|
+      @config[option] ||= value
+    end
+
+    yield @config if block
+
+    resolve_host_locale_config_conflicts unless @config.host_locales.empty?
+
+    @config
+  end
+
+  def available_locales
+    locales = config.available_locales
+
+    if locales.any?
+      locales.map(&:to_sym)
+    else
+      I18n.available_locales.dup
+    end
+  end
+
+  def locale_param_key
+    config.locale_param_key
+  end
+
+  def locale_from_params(params)
+    locale = params[config.locale_param_key]&.to_sym
+    locale if I18n.available_locales.include?(locale)
   end
 end

@@ -1,6 +1,3 @@
-require File.expand_path('../../dummy/dummy_mounted_app', __FILE__)
-require File.expand_path('../../dummy/config/environment', __FILE__)
+# frozen_string_literal: true
 
-def integration_test_suite_parent_class
-  defined?(ActionDispatch::IntegrationTest) ? ActionDispatch::IntegrationTest : ActionController::IntegrationTest
-end
+require 'dummy/config/environment'

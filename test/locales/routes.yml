@@ -4,11 +4,30 @@ es:
     units: unidades
     products: productos
     tr_param: tr_parametro
+    favourites: favoritos
     blank: ""
+    slash: foo/bar
+    space: foo bar
+    controllers:
+      people:
+        products:
+          favourites: fans
 
 ru:
   routes:
     people: люди
+    favourites: избранное
+    controllers:
+      people:
+        products:
+          favourites: кандидаты
+
+de-AT:
+  routes:
+    people: Menschen
+    products: Produkten
+    tr_param: tr_parameter
+    blank: ""
 
 en:
   m: m #Adding this here just to have en in I18n.available_locales
